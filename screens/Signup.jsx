@@ -29,12 +29,49 @@ import { Dimensions } from 'react-native';
 
 import KeyboradAvoidingWrapper from '../components/KeyboardAvoidingWrapper';
 import { Logo } from '../components/Logo';
+import axios from 'axios';
 
 
 
 const Signup = () => {
     const height = Dimensions.get('window');
-    const [hidePassword, setHidePassword] = useState(true)
+    const [hidePassword, setHidePassword] = useState(true);
+    const [message, setMessage] = useState();
+    const [messageType, setMessageType] = useState();
+
+    const handleRegister = (cred, setSubmitting) => {
+        handleMessage(null);
+        const url = "http://192.168.1.3:4040/api/v2/auth/register"
+        axios.post(url, cred).then((response) => {
+            const data = response.data;
+            const { message, status, user } = data
+            console.log(data);
+            if (status != 1) {
+                handleMessage(message, status)
+            } else {
+                handleMessage(message)
+            }
+            setSubmitting(false)
+
+        }).catch((error) => {
+            if (error.response) {
+                console.log(error.response.data.message);
+                setSubmitting(false)
+                // handleMessage(error.response.data.message)
+
+            } else {
+                setSubmitting(false)
+                handleMessage("An Error Occurred. Check your internet Connection and try again")
+            }
+
+        })
+
+    }
+    const handleMessage = (message, type = 0) => {
+        setMessage(message)
+        setMessageType(type)
+
+    }
     return (
         <StyledContainer style={{ minHeight: height }}>
             <StatusBar style='dark' />
@@ -44,7 +81,14 @@ const Signup = () => {
                 <SubTitle>Please Signup</SubTitle>
                 <Formik
                     initialValues={{ email: "", name: "", confirmPassword: "", password: "" }}
-                    onSubmit={(values) => { console.log(values); }}
+                    onSubmit={(values, { setSubmitting }) => {
+                        if (values.email == '' || values.password == '' || values.name == '' || values.password == '' || values.password != values.confirmPassword) {
+                            handleMessage("Validate All Fields")
+                            setSubmitting(false)
+                        } else {
+                            handleRegister(values, setSubmitting)
+                        }
+                    }}
                 >
                     {
                         ({ handleChange, handleBlur, handleSubmit, values }) => (
@@ -91,7 +135,7 @@ const Signup = () => {
                                         hidePassword={hidePassword}
                                         setHidePassword={setHidePassword}
                                         icon="lock" />
-                                    <MsgBox>...</MsgBox>
+                                    <MsgBox>{message}</MsgBox>
 
                                     <StyledButton onPress={handleSubmit}>
                                         <ButtonText>
